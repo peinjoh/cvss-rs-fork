@@ -45,6 +45,7 @@ use serde::Deserialize;
 use std::fmt::{self, Display, Formatter};
 use strum::{Display, EnumDiscriminants, EnumString};
 
+pub(crate) mod utils;
 pub mod v2_0;
 pub mod v3;
 pub mod v4_0;
@@ -58,12 +59,16 @@ pub mod version;
 #[strum_discriminants(derive(Display, EnumString))]
 pub enum Cvss {
     #[serde(rename = "2.0")]
+    #[strum_discriminants(strum(serialize = "2.0"))]
     V2(v2_0::CvssV2),
     #[serde(rename = "3.0")]
+    #[strum_discriminants(strum(serialize = "3.0"))]
     V3_0(v3::CvssV3),
     #[serde(rename = "3.1")]
+    #[strum_discriminants(strum(serialize = "3.1"))]
     V3_1(v3::CvssV3),
     #[serde(rename = "4.0")]
+    #[strum_discriminants(strum(serialize = "4.0"))]
     V4(v4_0::CvssV4),
 }
 
@@ -124,10 +129,14 @@ pub enum Severity {
 /// Errors that can occur when parsing CVSS vector strings.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParseError {
-    /// Vector string doesn't start with "CVSS" or expected prefix
-    InvalidPrefix { found: String },
+    /// Vector string is malformed (e.g., missing '/' separators)
+    MalformedVectorString,
+    /// Vector string doesn't start with "CVSS:"
+    InvalidPrefixLabel { found: String },
+    /// CVSS version has unexpected format
+    MalformedPrefixVersion { version: String },
     /// Unsupported or invalid CVSS version
-    InvalidVersion { version: String },
+    InvalidPrefixVersion { version: String },
     /// Component is malformed (not in key:value format)
     InvalidComponent { component: String },
     /// Metric abbreviation not recognized
@@ -143,14 +152,24 @@ pub enum ParseError {
 impl Display for ParseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::InvalidPrefix { found } => {
+            ParseError::MalformedVectorString => {
+                write!(f, "malformed vector string: no '/' separator found")
+            }
+            ParseError::InvalidPrefixLabel { found } => {
                 write!(
                     f,
-                    "invalid vector prefix: expected 'CVSS', found '{}'",
+                    "invalid vector prefix: expected prefix to start with 'CVSS:', found '{}'",
                     found
                 )
             }
-            ParseError::InvalidVersion { version } => {
+            ParseError::MalformedPrefixVersion { version } => {
+                write!(
+                    f,
+                    "malformed CVSS version format: '{}' (expected 'X.Y')",
+                    version
+                )
+            }
+            ParseError::InvalidPrefixVersion { version } => {
                 write!(f, "invalid or unsupported CVSS version: '{}'", version)
             }
             ParseError::InvalidComponent { component } => {
