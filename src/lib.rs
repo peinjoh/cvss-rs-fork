@@ -46,6 +46,7 @@ use std::fmt::{Display, Formatter};
 use strum::{Display, EnumDiscriminants, EnumString};
 
 pub mod error;
+pub(crate) mod utils;
 pub mod v2_0;
 pub mod v3;
 pub mod v4_0;
