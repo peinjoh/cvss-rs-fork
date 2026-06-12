@@ -1,13 +1,13 @@
 //! Represents the CVSS v2.0 specification.
 
-use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
+
+use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
 use crate::utils::{parse_metrics, prefix};
-use crate::Version;
-use crate::{ParseError, Severity as UnifiedSeverity};
+use crate::{ParseError, Severity as UnifiedSeverity, Version};
 
 /// Represents a CVSS v2.0 score object.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -589,109 +589,23 @@ impl FromStr for CvssV2 {
             let (key, value) = parse_metrics::parse_kvp(component)?;
 
             match key.as_str() {
-                "AV" => {
-                    cvss.access_vector =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "AC" => {
-                    cvss.access_complexity =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "AU" => {
-                    cvss.authentication =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "C" => {
-                    cvss.confidentiality_impact =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "I" => {
-                    cvss.integrity_impact =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "A" => {
-                    cvss.availability_impact =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
+                "AV" => parse_metrics::parse_metric(&mut cvss.access_vector, &value, &key)?,
+                "AC" => parse_metrics::parse_metric(&mut cvss.access_complexity, &value, &key)?,
+                "AU" => parse_metrics::parse_metric(&mut cvss.authentication, &value, &key)?,
+                "C" => parse_metrics::parse_metric(&mut cvss.confidentiality_impact, &value, &key)?,
+                "I" => parse_metrics::parse_metric(&mut cvss.integrity_impact, &value, &key)?,
+                "A" => parse_metrics::parse_metric(&mut cvss.availability_impact, &value, &key)?,
                 // Temporal metrics
-                "E" => {
-                    cvss.exploitability =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "RL" => {
-                    cvss.remediation_level =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "RC" => {
-                    cvss.report_confidence =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
+                "E" => parse_metrics::parse_metric(&mut cvss.exploitability, &value, &key)?,
+                "RL" => parse_metrics::parse_metric(&mut cvss.remediation_level, &value, &key)?,
+                "RC" => parse_metrics::parse_metric(&mut cvss.report_confidence, &value, &key)?,
                 // Environmental metrics
-                "CDP" => {
-                    cvss.collateral_damage_potential =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "TD" => {
-                    cvss.target_distribution =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "CR" => {
-                    cvss.confidentiality_requirement =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "IR" => {
-                    cvss.integrity_requirement =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                "AR" => {
-                    cvss.availability_requirement =
-                        Some(value.parse().map_err(|_| ParseError::InvalidMetricValue {
-                            metric: key.clone(),
-                            value: value.clone(),
-                        })?);
-                }
-                _ => {
-                    return Err(ParseError::UnknownMetric { metric: key });
-                }
+                "CDP" => parse_metrics::parse_metric(&mut cvss.collateral_damage_potential, &value, &key)?,
+                "TD" => parse_metrics::parse_metric(&mut cvss.target_distribution, &value, &key)?,
+                "CR" => parse_metrics::parse_metric(&mut cvss.confidentiality_requirement, &value, &key)?,
+                "IR" => parse_metrics::parse_metric(&mut cvss.integrity_requirement, &value, &key)?,
+                "AR" => parse_metrics::parse_metric(&mut cvss.availability_requirement, &value, &key)?,
+                _ => return Err(ParseError::UnknownMetric { metric: key }),
             }
         }
 
