@@ -11,7 +11,7 @@ use std::fmt;
 use std::str::FromStr;
 use strum::{Display, EnumString};
 
-use crate::utils::prefix;
+use crate::utils::{parse_metrics, prefix};
 use crate::Version;
 use crate::{ParseError, Severity as UnifiedSeverity};
 
@@ -638,30 +638,7 @@ impl FromStr for CvssV4 {
 
         // Parse metrics
         for component in components_str.split('/') {
-            if component.is_empty() {
-                continue;
-            }
-
-            let mut parts = component.split(':');
-            let key = parts
-                .next()
-                .ok_or_else(|| ParseError::InvalidComponent {
-                    component: component.to_string(),
-                })?
-                .to_ascii_uppercase();
-            let value = parts
-                .next()
-                .ok_or_else(|| ParseError::InvalidComponent {
-                    component: component.to_string(),
-                })?
-                .to_ascii_uppercase();
-
-            // Check for extra colons
-            if parts.next().is_some() {
-                return Err(ParseError::InvalidComponent {
-                    component: component.to_string(),
-                });
-            }
+            let (key, value) = parse_metrics::parse_kvp(component)?;
 
             match key.as_str() {
                 // Base metrics

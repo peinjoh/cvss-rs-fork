@@ -5,7 +5,7 @@ use std::fmt;
 use std::str::FromStr;
 use strum::{Display, EnumString};
 
-use crate::{utils::prefix, version::VersionV3, ParseError, Severity as UnifiedSeverity, Version};
+use crate::{utils::{parse_metrics, prefix}, version::VersionV3, ParseError, Severity as UnifiedSeverity, Version};
 
 /// Represents a CVSS v3.0 or v3.1 score object.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -652,30 +652,8 @@ impl FromStr for CvssV3 {
 
         // Parse metrics
         for component in components_str.split('/') {
-            if component.is_empty() {
-                continue;
-            }
 
-            let mut parts = component.split(':');
-            let key = parts
-                .next()
-                .ok_or_else(|| ParseError::InvalidComponent {
-                    component: component.to_string(),
-                })?
-                .to_ascii_uppercase();
-            let value = parts
-                .next()
-                .ok_or_else(|| ParseError::InvalidComponent {
-                    component: component.to_string(),
-                })?
-                .to_ascii_uppercase();
-
-            // Check for extra colons
-            if parts.next().is_some() {
-                return Err(ParseError::InvalidComponent {
-                    component: component.to_string(),
-                });
-            }
+            let (key, value) = parse_metrics::parse_kvp(component)?;
 
             match key.as_str() {
                 // Base metrics

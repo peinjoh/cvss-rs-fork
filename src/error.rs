@@ -15,7 +15,7 @@ pub enum ParseError {
     /// Unsupported or invalid CVSS version
     #[error("invalid or unsupported CVSS version: '{version}'")]
     InvalidPrefixVersion { version: String },
-    /// Component is malformed (not in key:value format)
+    /// Component is malformed (not in key:value format, i.e. empty, only colon, no key, no value, additional colon)
     #[error("invalid component format: '{component}' (expected 'KEY:VALUE')")]
     InvalidComponent { component: String },
     /// Metric abbreviation not recognized
