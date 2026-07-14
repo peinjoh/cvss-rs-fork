@@ -6,7 +6,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
-use crate::utils::{parse_metrics::parse_metric, prefix};
+use crate::utils::{parse_metrics, prefix};
 use crate::{ParseError, Severity as UnifiedSeverity, Version};
 
 /// Represents a CVSS v2.0 score object.
@@ -586,48 +586,25 @@ impl FromStr for CvssV2 {
 
         // Parse metrics
         for component in components_str.split('/') {
-            if component.is_empty() {
-                continue;
-            }
-
-            let mut parts = component.split(':');
-            let key = parts
-                .next()
-                .ok_or_else(|| ParseError::InvalidComponent {
-                    component: component.to_string(),
-                })?
-                .to_ascii_uppercase();
-            let value = parts
-                .next()
-                .ok_or_else(|| ParseError::InvalidComponent {
-                    component: component.to_string(),
-                })?
-                .to_ascii_uppercase();
-
-            // Check for extra colons
-            if parts.next().is_some() {
-                return Err(ParseError::InvalidComponent {
-                    component: component.to_string(),
-                });
-            }
+            let (key, value) = parse_metrics::parse_kvp(component)?;
 
             match key.as_str() {
-                "AV" => parse_metric(&mut cvss.access_vector, &value, &key)?,
-                "AC" => parse_metric(&mut cvss.access_complexity, &value, &key)?,
-                "AU" => parse_metric(&mut cvss.authentication, &value, &key)?,
-                "C" => parse_metric(&mut cvss.confidentiality_impact, &value, &key)?,
-                "I" => parse_metric(&mut cvss.integrity_impact, &value, &key)?,
-                "A" => parse_metric(&mut cvss.availability_impact, &value, &key)?,
+                "AV" => parse_metrics::parse_metric(&mut cvss.access_vector, &value, &key)?,
+                "AC" => parse_metrics::parse_metric(&mut cvss.access_complexity, &value, &key)?,
+                "AU" => parse_metrics::parse_metric(&mut cvss.authentication, &value, &key)?,
+                "C" => parse_metrics::parse_metric(&mut cvss.confidentiality_impact, &value, &key)?,
+                "I" => parse_metrics::parse_metric(&mut cvss.integrity_impact, &value, &key)?,
+                "A" => parse_metrics::parse_metric(&mut cvss.availability_impact, &value, &key)?,
                 // Temporal metrics
-                "E" => parse_metric(&mut cvss.exploitability, &value, &key)?,
-                "RL" => parse_metric(&mut cvss.remediation_level, &value, &key)?,
-                "RC" => parse_metric(&mut cvss.report_confidence, &value, &key)?,
+                "E" => parse_metrics::parse_metric(&mut cvss.exploitability, &value, &key)?,
+                "RL" => parse_metrics::parse_metric(&mut cvss.remediation_level, &value, &key)?,
+                "RC" => parse_metrics::parse_metric(&mut cvss.report_confidence, &value, &key)?,
                 // Environmental metrics
-                "CDP" => parse_metric(&mut cvss.collateral_damage_potential, &value, &key)?,
-                "TD" => parse_metric(&mut cvss.target_distribution, &value, &key)?,
-                "CR" => parse_metric(&mut cvss.confidentiality_requirement, &value, &key)?,
-                "IR" => parse_metric(&mut cvss.integrity_requirement, &value, &key)?,
-                "AR" => parse_metric(&mut cvss.availability_requirement, &value, &key)?,
+                "CDP" => parse_metrics::parse_metric(&mut cvss.collateral_damage_potential, &value, &key)?,
+                "TD" => parse_metrics::parse_metric(&mut cvss.target_distribution, &value, &key)?,
+                "CR" => parse_metrics::parse_metric(&mut cvss.confidentiality_requirement, &value, &key)?,
+                "IR" => parse_metrics::parse_metric(&mut cvss.integrity_requirement, &value, &key)?,
+                "AR" => parse_metrics::parse_metric(&mut cvss.availability_requirement, &value, &key)?,
                 _ => return Err(ParseError::UnknownMetric { metric: key }),
             }
         }

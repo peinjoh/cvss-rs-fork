@@ -6,7 +6,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
-use crate::utils::{parse_metrics::parse_metric, prefix};
+use crate::utils::{parse_metrics, prefix};
 use crate::{version::VersionV3, ParseError, Severity as UnifiedSeverity, Version};
 
 /// Represents a CVSS v3.0 or v3.1 score object.
@@ -654,58 +654,36 @@ impl FromStr for CvssV3 {
 
         // Parse metrics
         for component in components_str.split('/') {
-            if component.is_empty() {
-                continue;
-            }
 
-            let mut parts = component.split(':');
-            let key = parts
-                .next()
-                .ok_or_else(|| ParseError::InvalidComponent {
-                    component: component.to_string(),
-                })?
-                .to_ascii_uppercase();
-            let value = parts
-                .next()
-                .ok_or_else(|| ParseError::InvalidComponent {
-                    component: component.to_string(),
-                })?
-                .to_ascii_uppercase();
-
-            // Check for extra colons
-            if parts.next().is_some() {
-                return Err(ParseError::InvalidComponent {
-                    component: component.to_string(),
-                });
-            }
+            let (key, value) = parse_metrics::parse_kvp(component)?;
 
             match key.as_str() {
                 // Base metrics
-                "AV" => parse_metric(&mut cvss.attack_vector, &value, &key)?,
-                "AC" => parse_metric(&mut cvss.attack_complexity, &value, &key)?,
-                "PR" => parse_metric(&mut cvss.privileges_required, &value, &key)?,
-                "UI" => parse_metric(&mut cvss.user_interaction, &value, &key)?,
-                "S" => parse_metric(&mut cvss.scope, &value, &key)?,
-                "C" => parse_metric(&mut cvss.confidentiality_impact, &value, &key)?,
-                "I" => parse_metric(&mut cvss.integrity_impact, &value, &key)?,
-                "A" => parse_metric(&mut cvss.availability_impact, &value, &key)?,
+                "AV" => parse_metrics::parse_metric(&mut cvss.attack_vector, &value, &key)?,
+                "AC" => parse_metrics::parse_metric(&mut cvss.attack_complexity, &value, &key)?,
+                "PR" => parse_metrics::parse_metric(&mut cvss.privileges_required, &value, &key)?,
+                "UI" => parse_metrics::parse_metric(&mut cvss.user_interaction, &value, &key)?,
+                "S" => parse_metrics::parse_metric(&mut cvss.scope, &value, &key)?,
+                "C" => parse_metrics::parse_metric(&mut cvss.confidentiality_impact, &value, &key)?,
+                "I" => parse_metrics::parse_metric(&mut cvss.integrity_impact, &value, &key)?,
+                "A" => parse_metrics::parse_metric(&mut cvss.availability_impact, &value, &key)?,
                 // Temporal metrics
-                "E" => parse_metric(&mut cvss.exploit_code_maturity, &value, &key)?,
-                "RL" => parse_metric(&mut cvss.remediation_level, &value, &key)?,
-                "RC" => parse_metric(&mut cvss.report_confidence, &value, &key)?,
+                "E" => parse_metrics::parse_metric(&mut cvss.exploit_code_maturity, &value, &key)?,
+                "RL" => parse_metrics::parse_metric(&mut cvss.remediation_level, &value, &key)?,
+                "RC" => parse_metrics::parse_metric(&mut cvss.report_confidence, &value, &key)?,
                 // Environmental metrics
-                "CR" => parse_metric(&mut cvss.confidentiality_requirement, &value, &key)?,
-                "IR" => parse_metric(&mut cvss.integrity_requirement, &value, &key)?,
-                "AR" => parse_metric(&mut cvss.availability_requirement, &value, &key)?,
+                "CR" => parse_metrics::parse_metric(&mut cvss.confidentiality_requirement, &value, &key)?,
+                "IR" => parse_metrics::parse_metric(&mut cvss.integrity_requirement, &value, &key)?,
+                "AR" => parse_metrics::parse_metric(&mut cvss.availability_requirement, &value, &key)?,
                 // Modified metrics
-                "MAV" => parse_metric(&mut cvss.modified_attack_vector, &value, &key)?,
-                "MAC" => parse_metric(&mut cvss.modified_attack_complexity, &value, &key)?,
-                "MPR" => parse_metric(&mut cvss.modified_privileges_required, &value, &key)?,
-                "MUI" => parse_metric(&mut cvss.modified_user_interaction, &value, &key)?,
-                "MS" => parse_metric(&mut cvss.modified_scope, &value, &key)?,
-                "MC" => parse_metric(&mut cvss.modified_confidentiality_impact, &value, &key)?,
-                "MI" => parse_metric(&mut cvss.modified_integrity_impact, &value, &key)?,
-                "MA" => parse_metric(&mut cvss.modified_availability_impact, &value, &key)?,
+                "MAV" => parse_metrics::parse_metric(&mut cvss.modified_attack_vector, &value, &key)?,
+                "MAC" => parse_metrics::parse_metric(&mut cvss.modified_attack_complexity, &value, &key)?,
+                "MPR" => parse_metrics::parse_metric(&mut cvss.modified_privileges_required, &value, &key)?,
+                "MUI" => parse_metrics::parse_metric(&mut cvss.modified_user_interaction, &value, &key)?,
+                "MS" => parse_metrics::parse_metric(&mut cvss.modified_scope, &value, &key)?,
+                "MC" => parse_metrics::parse_metric(&mut cvss.modified_confidentiality_impact, &value, &key)?,
+                "MI" => parse_metrics::parse_metric(&mut cvss.modified_integrity_impact, &value, &key)?,
+                "MA" => parse_metrics::parse_metric(&mut cvss.modified_availability_impact, &value, &key)?,
                 _ => {
                     return Err(ParseError::UnknownMetric { metric: key });
                 }
